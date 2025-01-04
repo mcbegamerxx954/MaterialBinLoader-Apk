@@ -1,13 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                                   xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-                                                   android:layout_height="match_parent">
-    <TextView
-            android:layout_width="0dp"
-            android:layout_height="0dp" android:id="@+id/listener"
-            app:layout_constraintTop_toTopOf="parent"
-            android:layout_marginTop="16dp" android:layout_marginEnd="16dp"
-            app:layout_constraintEnd_toEndOf="parent" app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="16dp"
-            android:layout_marginBottom="16dp" android:fontFamily="monospace" android:bufferType="spannable"/>
-</androidx.constraintlayout.widget.ConstraintLayout>
+
+<LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:id="@+id/linearlayout"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical"
+	android:padding="8dp">
+
+	<TextView
+		android:id="@+id/textview"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:text="@string/welcome"
+		android:textSize="19sp"
+		android:gravity="center_horizontal" />
+
+	<LinearLayout
+		android:id="@+id/tablelayout"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"		
+		android:orientation="vertical"
+		android:padding="8dp"
+		android:background="#FF000000">
+
+		<TextView
+			android:id="@+id/textview1"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/mbl2_desc" />
+
+		<Button
+			android:id="@+id/mbl2_load"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Load with mbl2" />
+
+	</LinearLayout>
+
+	<LinearLayout
+		android:id="@+id/tablelayout1"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical"		
+		android:padding="8dp"
+		android:background="#FF000000">
+
+		<TextView
+			android:id="@+id/textview2"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/draco_desc" />
+
+		<Button
+			android:id="@+id/draco_load"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Load with draco" />
+
+	</LinearLayout>
+
+	<LinearLayout
+		android:id="@+id/linearlayout1"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal"
+		android:padding="8dp">
+
+		<TextView
+			android:id="@+id/textview3"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/mc_pkgname" />
+
+		<EditText
+			android:id="@+id/mc_pkgname"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:hint="Package name of Minecraft"
+			android:inputType="text" />
+
+	</LinearLayout>
+
+	<TableLayout
+		android:id="@+id/tablelayout2"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:padding="8dp">
+
+		<TextView
+			android:id="@+id/textview4"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:text="Launcher logs here:"
+			android:gravity="center_horizontal"
+			android:textSize="19sp" />
+
+		<TextView
+			android:id="@+id/listener"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="   " />
+
+	</TableLayout>
+
+</LinearLayout>

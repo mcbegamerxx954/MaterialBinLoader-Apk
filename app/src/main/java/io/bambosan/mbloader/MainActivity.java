@@ -4,17 +4,23 @@ import org.jetbrains.annotations.NotNull;
 import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 import android.widget.TextView;
+import android.widget.Button;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Build;
 import androidx.appcompat.app.AppCompatActivity;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,13 +29,13 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String MC_PACKAGE_NAME = "com.mojang.minecraftpe";
-    private static final String LAUNCHER_DEX_NAME = "launcher.dex";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,24 +43,48 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         TextView listener = findViewById(R.id.listener);
+        TextView mcPkgName = findViewById(R.id.mc_pkgname);
+        Button  mbl2_button = findViewById(R.id.mbl2_load);
+        Button draco_button = findViewById(R.id.draco_load);
 
         Handler handler = new Handler(Looper.getMainLooper());
+        mcPkgName.setText(MC_PACKAGE_NAME);
+        mbl2_button.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            { 
+                startLauncher(handler, listener, "launcher_mbl2.dex", mcPkgName.getText().toString());    
+            }
+        });
+        
+        draco_button.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {        
+                startLauncher(handler, listener, "launcher_draco.dex", mcPkgName.getText().toString());    
+            }
+        });    
+}
+    private void startLauncher(Handler handler, TextView listener, String launcherDexName, String mcPackageName) {    
         Executors.newSingleThreadExecutor().execute(() -> {
             try {
                 File cacheDexDir = new File(getCodeCacheDir(), "dex");
                 handleCacheCleaning(cacheDexDir, handler, listener);
-                ApplicationInfo mcInfo = getPackageManager().getApplicationInfo(MC_PACKAGE_NAME, PackageManager.GET_META_DATA);
+                ApplicationInfo mcInfo = getPackageManager().getApplicationInfo(mcPackageName, PackageManager.GET_META_DATA);
                 Object pathList = getPathList(getClassLoader());
-                processDexFiles(mcInfo, cacheDexDir, pathList, handler, listener);
+                processDexFiles(mcInfo, cacheDexDir, pathList, handler, listener, launcherDexName);
                 processNativeLibraries(mcInfo, pathList, handler, listener);
                 launchMinecraft(mcInfo);
             } catch (Exception e) {
-                Intent fallbackActivity = new Intent(this, Fallback.class);
-                handleException(e, fallbackActivity);
+                //Intent fallbackActivity = new Intent(this, Fallback.class);
+                //handleException(e, fallbackActivity);
+String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString();                
+            handler.post(() -> listener.setText("Launching failed: " + logMessage));                
             }
-        });
+        });    
     }
-
     @SuppressLint("SetTextI18n")
     private void handleCacheCleaning(@NotNull File cacheDexDir, Handler handler, TextView listener) {
         if (cacheDexDir.exists() && cacheDexDir.isDirectory()) {
@@ -75,16 +105,16 @@ public class MainActivity extends AppCompatActivity {
         return pathListField.get(classLoader);
     }
 
-    private void processDexFiles(ApplicationInfo mcInfo, File cacheDexDir, @NotNull Object pathList, @NotNull Handler handler, TextView listener) throws Exception {
+    private void processDexFiles(ApplicationInfo mcInfo, File cacheDexDir, @NotNull Object pathList, @NotNull Handler handler, TextView listener, String launcherDexName) throws Exception {
         Method addDexPath = pathList.getClass().getDeclaredMethod("addDexPath", String.class, File.class);
-        File launcherDex = new File(cacheDexDir, LAUNCHER_DEX_NAME);
+        File launcherDex = new File(cacheDexDir, launcherDexName);
 
-        copyFile(getAssets().open(LAUNCHER_DEX_NAME), launcherDex);
-        handler.post(() -> listener.append("\n-> " + LAUNCHER_DEX_NAME + " copied to " + launcherDex.getAbsolutePath()));
+        copyFile(getAssets().open(launcherDexName), launcherDex);
+        handler.post(() -> listener.append("\n-> " + launcherDexName + " copied to " + launcherDex.getAbsolutePath()));
 
         if (launcherDex.setReadOnly()) {
             addDexPath.invoke(pathList, launcherDex.getAbsolutePath(), null);
-            handler.post(() -> listener.append("\n-> " + LAUNCHER_DEX_NAME + " added to dex path list"));
+            handler.post(() -> listener.append("\n-> " + launcherDexName + " added to dex path list"));
         }
 
         try (ZipFile zipFile = new ZipFile(mcInfo.sourceDir)) {
@@ -107,11 +137,66 @@ public class MainActivity extends AppCompatActivity {
     private void processNativeLibraries(@NotNull ApplicationInfo mcInfo, @NotNull Object pathList, @NotNull Handler handler, TextView listener) throws Exception {
         Method addNativePath = pathList.getClass().getDeclaredMethod("addNativePath", Collection.class);
         ArrayList<String> libDirList = new ArrayList<>();
+        File libdir = new File(mcInfo.nativeLibraryDir);
+			  if (libdir.list() == null || libdir.list().length == 0 
+			  || (mcInfo.flags & ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS) != ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS) {
+				    loadUnextractedLibs(mcInfo);
+				    libDirList.add(getApplicationInfo().dataDir + "/libs/");
+			  }
         libDirList.add(mcInfo.nativeLibraryDir);
         addNativePath.invoke(pathList, libDirList);
         handler.post(() -> listener.append("\n-> " + mcInfo.nativeLibraryDir + " added to native library directory path"));
     }
+    private void loadUnextractedLibs(ApplicationInfo appInfo) throws Exception {
+		    FileInputStream inStream = new FileInputStream(getApkWithLibs(appInfo));
+		    BufferedInputStream bufInStream = new BufferedInputStream(inStream);
+		    ZipInputStream inZipStream = new ZipInputStream(bufInStream);
+		    String zipPath = "lib/" + Build.SUPPORTED_ABIS[0] + "/";
+		    String outPath = getApplicationInfo().dataDir + "/libs/";
+		    File dir = new File(outPath);
+		    dir.mkdir();
+		    extractDir(appInfo, inZipStream, zipPath, outPath);
+	  }
+	  public String getApkWithLibs(ApplicationInfo pkg) throws PackageManager.NameNotFoundException
+	{
+		// get installed split's Names
+		String[] sn=pkg.splitSourceDirs;
 
+		// check whether if it's really split or not
+		if (sn != null && sn.length > 0)
+		{
+			String cur_abi = Build.SUPPORTED_ABIS[0].replace('-','_');
+			// search installed splits
+			for(String n:sn){
+				
+				 //check whether is the one required
+				if(n.contains(cur_abi)){
+				// yes, it's installed!
+					return n;
+				}
+			}
+		}
+		// couldn't find!
+		return pkg.sourceDir;
+	}
+	private static void extractDir(ApplicationInfo mcInfo, ZipInputStream zip, String zip_folder, String out_folder ) throws Exception{
+        ZipEntry ze = null;
+        while ((ze = zip.getNextEntry()) != null) {
+            if (ze.getName().startsWith(zip_folder)) {
+				String strippedName = ze.getName().substring(zip_folder.length());
+				String path = out_folder + strippedName;
+				OutputStream out = new FileOutputStream(path);
+				BufferedOutputStream outBuf = new BufferedOutputStream(out);
+                byte[] buffer = new byte[9000];
+                int len;
+                while ((len = zip.read(buffer)) != -1) {
+                    outBuf.write(buffer, 0, len);
+                }
+                outBuf.close();
+            }
+        }
+        zip.close();
+    }
     private void launchMinecraft(@NotNull ApplicationInfo mcInfo) throws ClassNotFoundException {
         Class<?> launcherClass = getClassLoader().loadClass("com.mojang.minecraftpe.Launcher");
         Intent mcActivity = new Intent(this, launcherClass);
@@ -150,4 +235,5 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+    
 }
