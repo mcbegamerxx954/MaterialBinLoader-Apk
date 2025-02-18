@@ -118,7 +118,7 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
         }
 
         try (ZipFile zipFile = new ZipFile(mcInfo.sourceDir)) {
-            for (int i = 2; i >= 0; i--) {
+            for (int i = 10; i >= 0; i--) {
                 String dexName = "classes" + (i == 0 ? "" : i) + ".dex";
                 ZipEntry dexFile = zipFile.getEntry(dexName);
                 if (dexFile != null) {
