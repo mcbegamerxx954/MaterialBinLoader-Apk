@@ -207,7 +207,7 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
 
 	private static Boolean checkLibCompatibility(ZipInputStream zip) throws Exception{
         ZipEntry ze = null;
-        String requiredLibDir = Build.SUPPORTED_ABIS[0] + "/";
+        String requiredLibDir = "lib/" + Build.SUPPORTED_ABIS[0] + "/";
         while ((ze = zip.getNextEntry()) != null) {
             if (ze.getName().startsWith(requiredLibDir)) {
                 return true;
