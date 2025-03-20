@@ -144,13 +144,13 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
         Method addNativePath = pathList.getClass().getDeclaredMethod("addNativePath", Collection.class);
         ArrayList<String> libDirList = new ArrayList<>();
         File libdir = new File(mcInfo.nativeLibraryDir);
-//			  if (libdir.list() == null || libdir.list().length == 0 
-//			  || (mcInfo.flags & ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS) != ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS) {
+			  if (libdir.list() == null || libdir.list().length == 0 
+			  || (mcInfo.flags & ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS) != ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS) {
 				    loadUnextractedLibs(mcInfo);
 				    libDirList.add(getCodeCacheDir().getAbsolutePath());
 				    customLibDir = getCodeCacheDir().getAbsolutePath() + "/libs/";
-//			  }
-//        libDirList.add(mcInfo.nativeLibraryDir);
+			  }
+        libDirList.add(mcInfo.nativeLibraryDir);
         addNativePath.invoke(pathList, libDirList);
         handler.post(() -> listener.append("\n-> " + mcInfo.nativeLibraryDir + " added to native library directory path"));
     }
