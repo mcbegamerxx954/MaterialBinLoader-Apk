@@ -34,7 +34,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 public class MainActivity extends AppCompatActivity {
-    static String customLibDir;
+
     private static final String MC_PACKAGE_NAME = "com.mojang.minecraftpe";
 
     @Override
@@ -43,12 +43,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         TextView listener = findViewById(R.id.listener);
-//        TextView mcPkgName = findViewById(R.id.mc_pkgname);
         Button  mbl2_button = findViewById(R.id.mbl2_load);
         Button draco_button = findViewById(R.id.draco_load);
-
         Handler handler = new Handler(Looper.getMainLooper());
-  //      mcPkgName.setText(MC_PACKAGE_NAME);
         mbl2_button.setOnClickListener(new View.OnClickListener()
         {
             @Override
@@ -131,29 +128,40 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
                     }
                 }
             }
-        } catch (Exception e) {}
+        } catch (Throwable th) {}
     }
 
-    private void processNativeLibraries(@NotNull ApplicationInfo mcInfo, @NotNull Object pathList, @NotNull Handler handler, TextView listener) throws Exception {        
-		    FileInputStream inStream = new FileInputStream(getApkWithLibs(mcInfo));
-		    BufferedInputStream bufInStream = new BufferedInputStream(inStream);
-		    ZipInputStream inZipStream = new ZipInputStream(bufInStream);
-		    if (!checkLibCompatibility(inZipStream)) {
-		        throw new Exception("Installled minecraft does not support main arch of device: " + Build.SUPPORTED_ABIS[0]);
-		    }
+    private void processNativeLibraries(@NotNull ApplicationInfo mcInfo, @NotNull Object pathList, @NotNull Handler handler, TextView listener) throws Exception {
+        FileInputStream inStream = new FileInputStream(getApkWithLibs(mcInfo));
+ 		    BufferedInputStream bufInStream = new BufferedInputStream(inStream);
+ 		    ZipInputStream inZipStream = new ZipInputStream(bufInStream);
+ 		    if (!checkLibCompatibility(inZipStream)) {
+ 		        throw new Exception("Installled minecraft does not support main arch of device: " + Build.SUPPORTED_ABIS[0]);
+ 		    } 		    
         Method addNativePath = pathList.getClass().getDeclaredMethod("addNativePath", Collection.class);
         ArrayList<String> libDirList = new ArrayList<>();
         File libdir = new File(mcInfo.nativeLibraryDir);
 			  if (libdir.list() == null || libdir.list().length == 0 
-			  || (mcInfo.flags & ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS) != ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS) {
+			   || (mcInfo.flags & ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS) != ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS) {
 				    loadUnextractedLibs(mcInfo);
-				    libDirList.add(getCodeCacheDir().getAbsolutePath());
-				    customLibDir = getCodeCacheDir().getAbsolutePath() + "/libs/";
-			  }
-        libDirList.add(mcInfo.nativeLibraryDir);
+				    libDirList.add(getCodeCacheDir().getAbsolutePath() + "/");
+			  } else {
+         libDirList.add(mcInfo.nativeLibraryDir);
+         }
         addNativePath.invoke(pathList, libDirList);
         handler.post(() -> listener.append("\n-> " + mcInfo.nativeLibraryDir + " added to native library directory path"));
     }
+    private static Boolean checkLibCompatibility(ZipInputStream zip) throws Exception{
+         ZipEntry ze = null;
+         String requiredLibDir = "lib/" + Build.SUPPORTED_ABIS[0] + "/";
+         while ((ze = zip.getNextEntry()) != null) {
+             if (ze.getName().startsWith(requiredLibDir)) {
+                 return true;
+             }
+         }
+         zip.close();
+         return false;
+     }
     private void loadUnextractedLibs(ApplicationInfo appInfo) throws Exception {
 		    FileInputStream inStream = new FileInputStream(getApkWithLibs(appInfo));
 		    BufferedInputStream bufInStream = new BufferedInputStream(inStream);
@@ -189,9 +197,9 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
 	private static void extractDir(ApplicationInfo mcInfo, ZipInputStream zip, String zip_folder, String out_folder ) throws Exception{
         ZipEntry ze = null;
         while ((ze = zip.getNextEntry()) != null) {
-            if (ze.getName().startsWith(zip_folder)) {
+            if (ze.getName().startsWith(zip_folder) && !ze.getName().contains("c++_shared")) {
 				String strippedName = ze.getName().substring(zip_folder.length());
-				String path = out_folder + '/' + strippedName;
+				String path = out_folder + "/" + strippedName;
 				OutputStream out = new FileOutputStream(path);
 				BufferedOutputStream outBuf = new BufferedOutputStream(out);
                 byte[] buffer = new byte[9000];
@@ -204,20 +212,6 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
         }
         zip.close();
     }
-
-	private static Boolean checkLibCompatibility(ZipInputStream zip) throws Exception{
-        ZipEntry ze = null;
-        String requiredLibDir = "lib/" + Build.SUPPORTED_ABIS[0] + "/";
-        while ((ze = zip.getNextEntry()) != null) {
-            if (ze.getName().startsWith(requiredLibDir)) {
-                return true;
-            }
-        }
-        zip.close();
-        return false;
-    }
-
-    
     private void launchMinecraft(@NotNull ApplicationInfo mcInfo) throws ClassNotFoundException {
         Class<?> launcherClass = getClassLoader().loadClass("com.mojang.minecraftpe.Launcher");
         // We do this to preserve data that apps like file managers pass 
