@@ -1,9 +1,29 @@
 <resources>
     <string name="app_name">MB Loader</string>
     <string name="xal_token">ms-xal-0000000048183522</string>
-	<string name="default_string">Hello World!</string>
+	<!--
+	<string name="description">
+		<b>MBL2</b></br>
+		The well known loader for Minecraft but improved.</br>
+		Stable, supports resource packs from both global and world. May not work on certain servers.</br>
+		It may break with future Minecraft updates.</br></br>
+
+		<b>Draco</b></br>
+		Another loader that works differently and serves as an alternative option.</br>
+		Less stable, supports resource packs ONLY from global. Can bypass server restrictions partially.</br>
+		Will continue to work for as long Minecraft doesn't get major resource pack related changes.
+	</string>
+	<string name="incompatible_arch">Ahoy pirate! Your Minecraft doesn't support main arch of device: </string>
+	-->
+
+	<string name="mbl2_desc">Supports shaders from resource packs from global packs, worlds, realms/servers. May not work on certain realms/servers. Quiet stable but might break when Minecraft is updated.</string>
+	<string name="draco_desc">Supports shaders ONLY from global resource packs. Serves as an alternative. Can partially bypass realm/server restrictions. Less stable but higher compatibility with Minecraft.</string>
+
+	<!--
 	<string name="mbl2_desc">Startup with full support for shader resourcepacks from worlds,realms and servers (might break with mc updates)</string>
 	<string name="draco_desc">Startup with support for shader resourcepacks from global resourcepacks tab only (more compatible)</string>
-	<string name="welcome">Please choose what to launch mc with</string>
-	<string name="mc_pkgname">mc packageid:</string>
+	-->
+
+	<string name="welcome">Please choose what to start Minecraft with</string>
+	<string name="mc_pkgname">Minecraft package ID:</string>
 </resources>
