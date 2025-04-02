@@ -137,7 +137,15 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
  		    ZipInputStream inZipStream = new ZipInputStream(bufInStream);
  		    if (!checkLibCompatibility(inZipStream)) {
  		        throw new Exception("Installled minecraft does not support main arch of device: " + Build.SUPPORTED_ABIS[0]);
- 		    } 		    
+
+                // Easter egg
+                // throw new Exception("Ahoy pirate! Your Minecraft doesn't support main arch of device: " + Build.SUPPORTED_ABIS[0]);
+
+                /* Use @string instead of fixed text.
+                String errorMessage = getString(R.string.incompatible_arch, Build.SUPPORTED_ABIS[0]);
+                throw new Exception(errorMessage);
+                */
+ 		    }
         Method addNativePath = pathList.getClass().getDeclaredMethod("addNativePath", Collection.class);
         ArrayList<String> libDirList = new ArrayList<>();
         File libdir = new File(mcInfo.nativeLibraryDir);
@@ -173,6 +181,9 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
 		    extractDir(appInfo, inZipStream, zipPath, outPath);
 	  }
 	  public String getApkWithLibs(ApplicationInfo pkg) throws PackageManager.NameNotFoundException
+      /* Not sure if this is how it's supposed to be done...
+      public String getApkWithLibs(ApplicationInfo pkg) throw new Exception("You don't have Minecraft installed!");
+      */
 	{
 		// get installed split's Names
 		String[] sn=pkg.splitSourceDirs;

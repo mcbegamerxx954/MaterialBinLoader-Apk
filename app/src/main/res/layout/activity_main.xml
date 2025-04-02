@@ -35,7 +35,7 @@
 			android:id="@+id/mbl2_load"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:text="Load with mbl2" />
+			android:text="@string/mbl2_button" />
 
 	</LinearLayout>
 
@@ -57,7 +57,7 @@
 			android:id="@+id/draco_load"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:text="Load with draco" />
+			android:text="@string/draco_button" />
 
 	</LinearLayout>
 
@@ -78,7 +78,7 @@
 			android:id="@+id/mc_pkgname"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:hint="Package name of Minecraft"
+			android:hint="Package ID for Minecraft"
 			android:inputType="text" />
 
 	</LinearLayout>
@@ -98,11 +98,43 @@
 			android:textSize="19sp" />
 
 		<TextView
+			android:fontFamily="monospace"
 			android:id="@+id/listener"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:text="   " />
+			android:text="Logs will be shown after you start..." />
 
 	</TableLayout>
+
+	<!-- ScrollView given by ChatGPT. Perhaps test it out later.
+	<TableLayout
+    android:id="@+id/tablelayout2"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/textview4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Launcher logs here:"
+        android:gravity="center_horizontal"
+        android:textSize="19sp" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="200dp" <!-- Adjust height as needed -->
+        android:fillViewport="true">
+
+        <TextView
+            android:fontFamily="monospace"
+            android:id="@+id/listener"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Logs will be shown after you start..." />
+    </ScrollView>
+
+</TableLayout>
+	-->
 
 </LinearLayout>
