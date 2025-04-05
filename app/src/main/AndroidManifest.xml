@@ -58,8 +58,8 @@
             android:excludeFromRecents="false"
             android:exported="true"
             android:launchMode="singleTask"
-    
-            android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
             tools:ignore="DiscouragedApi">
             <meta-data
                 android:name="android.app.lib_name"
@@ -113,7 +113,7 @@
             android:exported="false"
             android:launchMode="singleTask"
             android:screenOrientation="sensorLandscape"
-            android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+            android:theme="@style/AppFullScreenTheme"
             tools:ignore="DiscouragedApi">
             <meta-data
                 android:name="android.app.lib_name"

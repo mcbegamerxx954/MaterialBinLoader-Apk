@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+	Welcome to LayoutEditor!
+
+	We are proud to present our innovative layout generator app that
+	allows users to create and customize stunning layouts in no time.
+	With LayoutEditor, you can easily create beautiful and custom
+	layouts that are tailored to fit your unique needs.
+
+	Thank you for using LayoutEditor and we hope you enjoy our app!
+-->
 
 <LinearLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
