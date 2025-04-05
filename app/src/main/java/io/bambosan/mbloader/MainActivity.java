@@ -1,7 +1,9 @@
 package io.bambosan.mbloader;
 
+import android.content.DialogInterface;
 import org.jetbrains.annotations.NotNull;
 import android.annotation.SuppressLint;
+import 	android.app.AlertDialog;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
@@ -32,16 +34,16 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-
+import java.util.ArrayList;
+import android.os.Looper;
 public class MainActivity extends AppCompatActivity {
 
     private static final String MC_PACKAGE_NAME = "com.mojang.minecraftpe";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+//        Looper.prepare();
         TextView listener = findViewById(R.id.listener);
         Button  mbl2_button = findViewById(R.id.mbl2_load);
         Button draco_button = findViewById(R.id.draco_load);
@@ -50,8 +52,11 @@ public class MainActivity extends AppCompatActivity {
         {
             @Override
             public void onClick(View v)
-            { 
-                startLauncher(handler, listener, "launcher_mbl2.dex", MC_PACKAGE_NAME);    
+            {
+                mbl2_button.setEnabled(false);
+                draco_button.setEnabled(false);                
+                startLauncher(handler, listener, "launcher_mbl2.dex", MC_PACKAGE_NAME);
+                
             }
         });
         
@@ -59,25 +64,37 @@ public class MainActivity extends AppCompatActivity {
         {
             @Override
             public void onClick(View v)
-            {        
+            {
+                mbl2_button.setEnabled(false);
+                draco_button.setEnabled(false);                                
                 startLauncher(handler, listener, "launcher_draco.dex", MC_PACKAGE_NAME);    
             }
-        });    
+        });
+    // Looper.loop();
 }
     private void startLauncher(Handler handler, TextView listener, String launcherDexName, String mcPackageName) {    
         Executors.newSingleThreadExecutor().execute(() -> {
             try {
+//                Looper.prepare();
                 File cacheDexDir = new File(getCodeCacheDir(), "dex");
                 handleCacheCleaning(cacheDexDir, handler, listener);
-                ApplicationInfo mcInfo = getPackageManager().getApplicationInfo(mcPackageName, PackageManager.GET_META_DATA);
+                ApplicationInfo mcInfo = null;
+                try {
+                    mcInfo = getPackageManager().getApplicationInfo(mcPackageName, PackageManager.GET_META_DATA);
+                } catch(Exception e) {
+                    handler.post(() -> alertAndExit("Minecraft cant be found", "Perhaps you dont have it installed?"));
+                    return;
+                };
                 Object pathList = getPathList(getClassLoader());
                 processDexFiles(mcInfo, cacheDexDir, pathList, handler, listener, launcherDexName);
-                processNativeLibraries(mcInfo, pathList, handler, listener);
+                if (!processNativeLibraries(mcInfo, pathList, handler, listener)) {
+                    return;
+                };
                 launchMinecraft(mcInfo);
             } catch (Exception e) {
                 //Intent fallbackActivity = new Intent(this, Fallback.class);
                 //handleException(e, fallbackActivity);
-String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString();                
+            String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString();                
             handler.post(() -> listener.setText("Launching failed: " + logMessage));                
             }
         });    
@@ -113,7 +130,7 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
             addDexPath.invoke(pathList, launcherDex.getAbsolutePath(), null);
             handler.post(() -> listener.append("\n-> " + launcherDexName + " added to dex path list"));
         }
-
+        ArrayList<String> copiedDexes = new ArrayList<String>();
         try (ZipFile zipFile = new ZipFile(mcInfo.sourceDir)) {
             for (int i = 10; i >= 0; i--) {
                 String dexName = "classes" + (i == 0 ? "" : i) + ".dex";
@@ -121,22 +138,26 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
                 if (dexFile != null) {
                     File mcDex = new File(cacheDexDir, dexName);
                     copyFile(zipFile.getInputStream(dexFile), mcDex);
-                    handler.post(() -> listener.append("\n-> " + mcInfo.sourceDir + "/" + dexName + " copied to " + mcDex.getAbsolutePath()));
+//                    handler.post(() -> listener.append("\n-> " + mcInfo.sourceDir + "/" + dexName + " copied to " + mcDex.getAbsolutePath()));
                     if (mcDex.setReadOnly()) {
                         addDexPath.invoke(pathList, mcDex.getAbsolutePath(), null);
-                        handler.post(() -> listener.append("\n-> " + dexName + " added to dex path list"));
+                        copiedDexes.add(dexName);
+//                        handler.post(() -> listener.append("\n-> " + dexName + " added to dex path list"));
                     }
                 }
             }
-        } catch (Throwable th) {}
+        } catch (Throwable th) {}    
+        handler.post(() -> listener.append("\n-> Dex files " + copiedDexes.toString() + " copied and added to dex path list"));        
     }
 
-    private void processNativeLibraries(@NotNull ApplicationInfo mcInfo, @NotNull Object pathList, @NotNull Handler handler, TextView listener) throws Exception {
+    private boolean processNativeLibraries(ApplicationInfo mcInfo, @NotNull Object pathList, @NotNull Handler handler, TextView listener) throws Exception {
         FileInputStream inStream = new FileInputStream(getApkWithLibs(mcInfo));
  		    BufferedInputStream bufInStream = new BufferedInputStream(inStream);
  		    ZipInputStream inZipStream = new ZipInputStream(bufInStream);
  		    if (!checkLibCompatibility(inZipStream)) {
- 		        throw new Exception("Installled minecraft does not support main arch of device: " + Build.SUPPORTED_ABIS[0]);
+            handler.post(() -> alertAndExit("Wrong minecraft architecture", "The minecraft you have installed does not support the same main architecture (" + Build.SUPPORTED_ABIS[0] + ") your device uses, mbloader cant work with it"));
+            return false;
+ 		       // 		        throw new Exception("Installled minecraft does not support main arch of device: " + Build.SUPPORTED_ABIS[0]);
  		    } 		    
         Method addNativePath = pathList.getClass().getDeclaredMethod("addNativePath", Collection.class);
         ArrayList<String> libDirList = new ArrayList<>();
@@ -150,6 +171,7 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
          }
         addNativePath.invoke(pathList, libDirList);
         handler.post(() -> listener.append("\n-> " + mcInfo.nativeLibraryDir + " added to native library directory path"));
+        return true;
     }
     private static Boolean checkLibCompatibility(ZipInputStream zip) throws Exception{
          ZipEntry ze = null;
@@ -161,6 +183,19 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
          }
          zip.close();
          return false;
+     }
+     private void alertAndExit(String issue, String description) {
+                    AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
+                    alertDialog.setTitle(issue);
+                    alertDialog.setMessage(description);
+                    alertDialog.setCancelable(false);
+                    alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "Exit",
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            finish();
+                        }
+                    });
+                    alertDialog.show();         
      }
     private void loadUnextractedLibs(ApplicationInfo appInfo) throws Exception {
 		    FileInputStream inStream = new FileInputStream(getApkWithLibs(appInfo));
@@ -212,7 +247,7 @@ String logMessage = e.getCause() != null ? e.getCause().toString() : e.toString(
         }
         zip.close();
     }
-    private void launchMinecraft(@NotNull ApplicationInfo mcInfo) throws ClassNotFoundException {
+    private void launchMinecraft(ApplicationInfo mcInfo) throws ClassNotFoundException {
         Class<?> launcherClass = getClassLoader().loadClass("com.mojang.minecraftpe.Launcher");
         // We do this to preserve data that apps like file managers pass 
         Intent mcActivity = getIntent().setClass(this, launcherClass);
